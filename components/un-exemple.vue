@@ -1,12 +1,9 @@
 <template>
-  <div class="p">
-    Ce template vous permet de démarrer un projet avec une arborescence initiale.
-    <p>lozorzokrz</p>
-  </div>
+  <div class="p">Ce template vous permet de démarrer un projet avec une arborescence initiale.</div>
 </template>
 
 <style>
-.p p {
-  color: red;
+.p {
+  font-weight: bold;
 }
 </style>
