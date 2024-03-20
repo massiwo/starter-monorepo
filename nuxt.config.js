@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   components: true,
-  modules: ["@pinia/nuxt", "@nuxt/ui", "@nuxtjs/eslint-module", "@nuxtjs/stylelint-module"],
+  modules: ["@pinia/nuxt", "@nuxt/ui", "@nuxtjs/eslint-module", "@nuxtjs/stylelint-module", "@nuxtjs/tailwindcss"],
   app: {
     rootId: "app",
     head: {
@@ -12,5 +12,8 @@ export default defineNuxtConfig({
     },
   },
 
+  tailwindcss: {
+    configPath: "~/tailwind.config.js",
+  },
   css: ["@/assets/scss/main.scss"],
 });
