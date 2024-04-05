@@ -15,7 +15,6 @@
 
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import axios from "axios";
 
 interface User {
   id: number;
@@ -32,8 +31,8 @@ export const useUserStore = defineStore("user", () => {
   async function loadUsers() {
     isLoading.value = true;
     try {
-      const response = await axios.get("/api/users");
-      users.value = response.data;
+      const response = await fetch("/api/users");
+      users.value = await response.json();
     } catch (error) {
       console.error("Error loading users:", error);
     } finally {
@@ -41,43 +40,12 @@ export const useUserStore = defineStore("user", () => {
     }
   }
 
-  // Ajouter un utilisateur
-  async function addUser(user: User) {
-    try {
-      const response = await axios.post("/api/users", user);
-      users.value.push(response.data);
-    } catch (error) {
-      console.error("Error adding user:", error);
-    }
-  }
-
-  // Mettre à jour un utilisateur
-  async function updateUser(user: User) {
-    try {
-      await axios.put(`/api/users/${user.id}`, user);
-      const index = users.value.findIndex((_user) => _user.id === user.id);
-      if (index !== -1) {
-        users.value[index] = user;
-      }
-    } catch (error) {
-      console.error("Error updating user:", error);
-    }
-  }
-
-  // Supprimer un utilisateur
-  async function deleteUser(userId: number) {
-    try {
-      await axios.delete(`/api/users/${userId}`);
-      users.value = users.value.filter((u) => u.id !== userId);
-    } catch (error) {
-      console.error("Error deleting user:", error);
-    }
-  }
-
-  return { users, isLoading, loadUsers, addUser, updateUser, deleteUser };
+  return { users, isLoading, loadUsers };
 });
 
-/** EXEMPLE D'UTILISATION DU LE STORE DANS UN COMPOSANT
+/** 
+ * EXEMPLE D'UTILISATION DU LE STORE DANS UN COMPOSANT VUE
+ * Ceci est un exemple à supprimer en phase de développement pour votre projet
 
 <template>
   <div v-if="userStore.isLoading">Chargement...</div>

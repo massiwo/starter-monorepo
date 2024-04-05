@@ -64,4 +64,4 @@ Pour démarrer le projet, suivez ces étapes :
    npm run generate
    ```
 
-Pour plus d'informations sur les commandes et configurations spécifiques, référez-vous à la documentation de [Nuxt.js](https://nuxtjs.org).
+Pour plus d'informations sur les commandes et configurations spécifiques, référez-vous à [la documentation de Nuxt 3](https://nuxt.com/docs/getting-started/introduction).

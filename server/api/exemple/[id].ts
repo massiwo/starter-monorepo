@@ -9,8 +9,9 @@
  * Documentation : https://nuxt.com/docs/guide/directory-structure/server
  */
 
-import authMiddleware from "../../middleware/exemple";
-import { query } from "../../utils/db";
+import { defineEventHandler } from "h3";
+import authMiddleware from "~/server/middleware/exemple";
+import { query } from "~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   // Appliquer le middleware d'authentification

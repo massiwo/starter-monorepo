@@ -9,7 +9,7 @@
  * Documentation : https://nuxt.com/docs/guide/directory-structure/server
  */
 
-import { query } from "../../utils/db";
+import { query } from "~/server/utils/db";
 
 export default defineEventHandler(async () => {
   const users = await query("SELECT * FROM users");

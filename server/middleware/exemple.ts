@@ -10,6 +10,8 @@
  * Documentation : https://nuxt.com/docs/guide/directory-structure/middleware
  */
 
+import { defineEventHandler } from "h3";
+
 export default defineEventHandler((event) => {
   console.log(`Requête reçue: ${event.req.method} ${event.req.url}`);
   // Autres logiques de traçage ici

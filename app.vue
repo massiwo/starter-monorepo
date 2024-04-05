@@ -4,4 +4,13 @@
   </NuxtLayout>
 </template>
 
-<script></script>
+<script setup>
+useHead({
+  htmlAttrs: {
+    class: [],
+  },
+  bodyAttrs: {
+    class: [],
+  },
+});
+</script>
