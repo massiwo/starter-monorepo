@@ -1,0 +1,23 @@
+# Contenu du fichier compose.dev.yml.
+# Environnement de Developpement
+# --------------------------------------------
+# A LIRE AVANT DE COMMENCER
+# --------------------------------------------
+# Ce fichier contient les configurations spécifiques à l'environnement de développement.
+# Chaque service importe les configurations de production du fichier docker-compose.yml et les configurations spécifiques à l'environnement de développement.
+# Les paramètres déjà présents dans le fichier docker-compose.yml seront écrasés par ceux de ce fichier.
+# --------------------------------------------
+#
+# --------------------------------------------
+# EXEMPLE DE CONFIGURATION
+# -------------------------------------------
+# services:
+#   my-service:
+#     extends:
+#       file: docker-compose.yml
+#       service: my-service
+#     ports:
+#       - "3333:3333"
+#     environment:
+#       - NODE_ENV=development
+# -------------------------------------------

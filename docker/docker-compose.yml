@@ -1,0 +1,22 @@
+# Contenu du fichier docker-compose.yml
+# Environnement de Production
+# --------------------------------------------
+# A LIRE AVANT DE COMMENCER
+# --------------------------------------------
+# Ce fichier contient les configurations spécifiques à l'environnement de production.
+# Chaque service importe les configurations communes du fichier docker-compose.common.yml et les configurations spécifiques à l'environnement de production.
+# Les paramètres déjà présents dans le fichier docker-compose.common.yml seront écrasés par ceux de ce fichier.
+# --------------------------------------------
+
+# --------------------------------------------
+# EXEMPLE DE CONFIGURATION
+# -------------------------------------------
+# services:
+#   my-service:
+#     extends:
+#       file: docker-compose.common.yml
+#       service: my-service
+#     environment:
+#       - NODE_ENV=production
+# -------------------------------------------
+

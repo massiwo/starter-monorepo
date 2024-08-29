@@ -1,0 +1,24 @@
+# Contenu du fichier compose.common.yml
+# --------------------------------------------
+# A LIRE AVANT DE COMMENCER
+# --------------------------------------------
+# Ce fichier est inclus dans les fichiers docker-compose.yml et docker-compose.dev.yml.
+# Il contient les configurations communes à tous les environnements.
+# Si votre service Docker nécessite des configurations spécifiques à un environnement, vous devez les ajouter dans les fichiers docker-compose.yml ou docker-compose.dev.yml.
+# --------------------------------------------
+
+# --------------------------------------------
+# EXEMPLE DE CONFIGURATION
+# -------------------------------------------
+# services:
+#   my-service:
+#     image: my-service:latest
+#     container_name: my-service
+#     restart: always
+#     volumes:
+#       - ./my-service:/app
+#     ports:
+#       - "8080:8080"
+#     environment:
+#       - MY_ENV_VAR=production
+# -------------------------------------------
