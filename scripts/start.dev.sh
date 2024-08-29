@@ -26,6 +26,9 @@ fi
 source config.sh
 
 echo "Démarrage des conteneurs Docker..."
-DOCKER_COMPOSE_FILE=$pwd/../../docker/compose.ligneA.yml
+
+# Ce chemin correspond à la structure de dossiers du projet
+DOCKER_COMPOSE_FILE=$pwd/../docker/docker-compose.dev.yml
+
 IMAGE=$IMAGE_NAME TAG=$IMAGE_TAG docker compose -f ${DOCKER_COMPOSE_FILE} up -d $1
 

@@ -24,6 +24,6 @@ if [ "${#ARGS[@]}" -eq 1 ]; then
 fi
 
 echo "Démarrage des conteneurs Docker..."
-DOCKER_COMPOSE_FILE=$pwd/compose.yml
+DOCKER_COMPOSE_FILE=$pwd/docker-compose.yml
 IMAGE=$IMAGE_NAME TAG=$IMAGE_TAG docker compose -f ${DOCKER_COMPOSE_FILE} exec -it $1 /bin/bash
 
