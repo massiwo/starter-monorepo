@@ -1,0 +1,3 @@
+[submodule "packages/design-system"]
+	path = packages/design-system
+	url = git@gitlab-ipl.valfontenay.ratp:outils/design-system.git
