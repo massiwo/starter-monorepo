@@ -48,7 +48,13 @@ git merge adonis
 git merge expressjs
 ```
 
-3. **Installer toutes les dépences de votre monorepo et des projets**
+3. **Nettoyez votre projet** (optionel)
+   _Après votre merge, il se peut que des conflits de dépendance apparaissent entre le framework et le starter._
+
+   **Solution:** Supprimer le dossier "node_modules" à la racie et dans les des différents projets.
+   <br>
+
+4. **Installer les dépendances**
 
 ```bash
 pnpm install
