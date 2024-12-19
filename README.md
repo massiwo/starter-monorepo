@@ -51,13 +51,30 @@ git merge expressjs
 3. **Nettoyez votre projet** (optionel)
    _Après votre merge, il se peut que des conflits de dépendance apparaissent entre le framework et le starter._
 
-   **Solution:** Supprimer le dossier "node_modules" à la racie et dans les des différents projets.
+   **Solution:**
+
+   ```bash
+   git status # Vérifier les répertoires ou fichiers en conflits
+   git add apps/ pnpm-lock.yaml # Prendre en compte ces conflits (exemple ici avec le répertoire "apps" et le fichier "pnpm-lock.yaml")
+   git commit # Appliquer la résolution des conflits avec Ctrl+X
+   ```
+
    <br>
 
 4. **Installer les dépendances**
 
 ```bash
 pnpm install
+```
+
+5. **Exécuter votre projet en développement**
+
+```bash
+pnpm run dev # exécute tous les projets en mode dev
+
+cd apps/<projet>
+pnpm run dev # exécute le projet en mode dev
+
 ```
 
 # Design System
