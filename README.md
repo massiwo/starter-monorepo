@@ -79,8 +79,6 @@ pnpm run dev # exécute le projet en mode dev
 
 # Design System
 
-🔗 `cd ./packages/design-system`
-
 ## Description
 
 Ce dépôt contient notre design system, conçu pour être utilisé avec Storybook. Il fournit une collection de composants UI réutilisables, de styles et de guidelines pour garantir une expérience utilisateur homogène et intuitive à travers toutes nos applications.
@@ -104,9 +102,74 @@ Le module "Design System" a été conçu dans un environnement monorepo. Pour in
 git submodule add git@gitlab-ipl.valfontenay.ratp:outils/design-system.git <chemin_souhaité>
 ```
 
-2. **Démarrez Storybook :**
+A ce stade votre design-system est ajouté dans votre projet comme sous-module et vous possédez une application dans `./apps`.
+Il ne vous reste plus qu'à l'installer dans votre application.
+
+**Pour votre toute première utilisation :**
+
+1. Rendez-vous dans le ficher `package.json` du design-system et identifiez le nom du package, indiqué par la propriété `name`:
+
+```json
+{
+  "name": "@myapp/design-system" // <- Exemple
+  // ... autres paramètres
+}
+```
+
+2. Puis, rendez-vous dans le ficher `package.json` de votre application.
+3. Déclarez la dépendance `design-system` dans la section `dependencies`, en indiquant son nom (identifié précédemment) et sa version, comme ceci:
+
+```json
+  "dependencies": {
+      // ... autre dépendances
+    "@myapp/design-system": "workspace:^1.0.0" // <- "workspace" signifie que cette dépendance se trouve dans ce projet.
+  },
+```
+
+4. Maintenant que vous avez déclaré cette dépendance, on l'installe :
 
 ```bash
-cd <chemin_vers_le_répertoire_parent>/design-system
-pnpm run storybook
+pnpm install
+```
+
+## Utilisation
+
+C'est parti pour l'intégrer à votre application !
+Deux choses à faires :
+
+1. Importer la dépdance dans la partie "css" de votre application en ajoutant ceci:
+
+```scss
+@import "@myapp/design-system/style"; /* <- Exemple (n'oubliez pas d'indiquez le vrai nom de la dépendance indiqué dans votre fichier package.json) */
+```
+
+2. Utiliser les composants de votre choix dans vos pages:
+
+```javascript
+<script setup lang="ts">
+import { Button } from '@myapp/design-system' // <- Exemple (n'oubliez pas d'indiquez le vrai nom de la dépendance indiqué dans votre fichier package.json)
+// ... reste du code
+</script>
+
+<template>
+   <Button color="primary">Hello World !</Button>
+</template>
+
+```
+
+## Mise à jour
+
+Pour mettre à jour le design-system vers sa dernière version disponible, il vous suffit de :
+
+1. Récupérer la dernière version du sous-module
+
+```bash
+git submodule update --remote packages/design-system # <- Vérifiez le nom de votre sous-module
+```
+
+2. Installer cette version dans votre application
+
+```bash
+cd <racine/de/votre/monorepo>
+pnpm install
 ```
