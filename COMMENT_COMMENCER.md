@@ -4,90 +4,77 @@ Ce guide explique comment démarrer concrètement la phase de réalisation de vo
 monorepo fourni. Il est destiné aux développeurs qui souhaitent intégrer leur propre application dans la structure
 existante.
 
-## 🧱 Étape 1 – Créer ou importer votre application
+## 🛠️ Étape 1 – Initialiser votre application avec le script CLI
 
-Chaque application doit être placée dans le dossier apps/.
-
-🔁 **Option A – Importer votre app comme sous-module Git**
-
-**Recommandé** si votre monorepo possède plusieurs applications ou si vous souhaitez maintenir une séparation claire
-entre le code de votre application et celui du starter.
-
-**ATTENTION :** Ceci nécessite que votre application soit déjà un dépôt Git et prêt à être utilisé comme sous-module
+Utilisez le script interactif `init.js` fourni pour créer, importer, dupliquer ou supprimer une application dans le
+monorepo :
 
 ```bash
-cd apps/
-git submodule add <url-de-votre-app.git> <nom-app>
+node init.js
 ```
 
-🔄 **Option B – Copier votre app existante**
+Vous serez guidé pas à pas pour :
 
-**Recommandé** si vous n'avez qu'une seule application à développer.
+* Ajouter une application comme sous-module Git
+* Copier manuellement une app dans ./apps
+* Dupliquer une application existante
+* Supprimer proprement une application
+
+Ce script configure également :
+
+* Le dossier `apps/<nom-app>`
+* Les Dockerfiles (`docker/<nom-app>`)
+* Les scripts (`scripts/<nom-app>`)
+* Le `docker-compose.yml` et `docker-compose.dev.yml`
+
+## 🧱 Étape 2 – Structure du projet générée automatiquement
+
+Une fois votre application initialisée via `init.js`, les éléments suivants sont générés :
 
 ```bash
-cd apps/
-cp -r <chemin-vers-votre-app> <nom-app>
+apps/<nom-app>/                # Code de votre app
+docker/<nom-app>/             # Dockerfiles de base & build
+scripts/<nom-app>/            # Scripts d'exécution associés
 ```
 
-## 🐳 **Étape 2 – Ajouter les Dockerfiles spécifiques à votre app**
+🔁 Basé sur le modèle mon_app_exemple (contenu générique à adapter).
 
-Créez un dossier dans docker/ portant le nom de votre app, par exemple :
+## 📦 **Étape 3 – Dépendances et workspace PNPM**
 
-```bash
-mkdir docker/<nom-app>
-```
+Assurez-vous que le fichier pnpm-workspace.yaml contient :
 
-Et placez-y deux fichiers :
-
-- `base.Dockerfile`
-- `build.Dockerfile`
-
-*Vous pouvez vous baser sur le dossier docker/mon_app_exemple/ comme modèle.*
-
-## 🛠️ **Étape 3 – Ajouter les scripts associés**
-
-Créez un dossier dans scripts/ portant le nom de votre app, par exemple :
-
-```bash
-mkdir scripts/<nom-app>
-```
-
-mkdir scripts/<nom-app>/
-
-Ajoutez-y les scripts suivants, à adapter selon vos besoins :
-
-* `start.sh`, `stop.sh`, `restart.sh`
-* `install.sh`, `uninstall.sh`
-* `build.app.sh`, `build.base.sh`
-* `dist.sh`, `enter.sh`, etc.
-
-Utilisez le dossier `scripts/mon_app_exemple/` comme base.
-
-## 📦 **Étape 4 – Ajouter votre app au workspace PNPM**
-
-Dans *pnpm-workspace.yaml*, ajoutez le chemin vers votre app :
-
-```yaml
+```yml
 packages:
   - 'apps/*'
   - 'packages/*'
 ```
 
-## 🔧 **Étape 5 – Vérifier la configuration**
+Puis installez les dépendances :
 
-Assurez-vous que :
+```bash
+pnpm install
+```
 
-* Vos ports sont correctement exposés dans `docker-compose.*.yml`
-* Votre app est bien référencée dans les services du `docker-compose` (à adapter au besoin)
-* Les variables d’environnement `.env` sont présentes si nécessaire
+## ⚙️ **Étape 4 – Configuration Docker (automatique mais vérifiable)**
 
-## 🚀 **Étape 6 – Lancer votre app**
+Le script `init.js` ajoute automatiquement votre service aux fichiers :
+
+* `docker-compose.yml`
+* `docker-compose.dev.yml`
+
+Assurez-vous de :
+
+* Adapter les ports exposés (de docker et des variables d’environnement)
+* Vérifier les variables d’environnement nécessaires
+* Corriger l’image et le container_name si besoin
+
+## 🚀 **🚀 Étape 5 – Démarrer votre application**
 
 Pour démarrer votre application, utilisez les commandes suivantes :
 
 ```bash
-pnpm run dev                   # Démarre toutes les apps
-cd apps/<nom-app> && pnpm dev  # Démarre une app spécifique
+pnpm run dev                         # Démarre toutes les apps
+pnpm --filter=<nom-app> run dev      # Démarre uniquement votre application
 ```
 
 ## 📎 **Exemple complet disponible :**
