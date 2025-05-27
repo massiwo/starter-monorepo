@@ -11,13 +11,21 @@
 # --------------------------------------------
 # EXEMPLE DE CONFIGURATION
 # -------------------------------------------
-# services:
-#   my-service:
-#     extends:
-#       file: docker-compose.yml
-#       service: my-service
-#     ports:
-#       - "3333:3333"
-#     environment:
-#       - NODE_ENV=development
-# -------------------------------------------
+services:
+  mon_app_exemple:
+    build:
+      context: .
+      dockerfile: docker/mon_app_exemple/build.Dockerfile
+    ports:
+      - "3333:3333"
+  nginx:
+    container_name: nginx_dev
+    extends:
+      service: nginx
+      file: docker-compose.yml
+
+  redis:
+    container_name: redis-dev
+    extends:
+      service: redis
+      file: docker-compose.yml

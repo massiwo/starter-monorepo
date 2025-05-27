@@ -11,12 +11,62 @@
 # --------------------------------------------
 # EXEMPLE DE CONFIGURATION
 # -------------------------------------------
-# services:
-#   my-service:
-#     extends:
-#       file: docker-compose.common.yml
-#       service: my-service
-#     environment:
-#       - NODE_ENV=production
-# -------------------------------------------
+services:
+  mon_app_exemple:
+    image: ${IMAGE:-mon_app_exemple}:latest
+    container_name: mon_app_exemple
+    build:
+      args:
+        - IMAGE=${IMAGE:-mon_app_exemple}
+      context: ..
+      dockerfile: ./docker/mon_app_exemple/build.Dockerfile
+    environment:
+      # Variables d'environnement pour AdonisJS
+      - NODE_ENV=production
+      - APP_NAME=PORTAL
+      - LIGNE_NAME=B
+      - TZ=UTC
+      - PORT=8080
+      - HOST=0.0.0.0
+      - LOG_LEVEL=debug
+      - LOG_FILE=/var/log/application/PORTAL.backend.log
+      - APP_KEY=SPlJYlMrLAgV5H97d-Nu9qB_XCBNH3RR
+      - SESSION_DRIVER=cookie
+      # Configuration de la base de données
+      - DB_HOST=127.0.0.1
+      - DB_PORT=5433
+      - DB_USER=mon_app_exemple_database_user
+      - DB_PASSWORD=mon_app_exemple_database_password
+      - DB_DATABASE=mon_app_exemple_database_name
+      # Configuration de Redis
+      - REDIS_HOST=127.0.0.1
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    expose:
+      - "8080"  # Port exposé par Adonis en production (build/server.js)
+    ports:
+      - "8080:8080"  # Port exposé par Adonis en production (build/server.js)
+    depends_on:
+      - redis
+    restart: unless-stopped
 
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    volumes:
+      - ./config/nginx:/etc/nginx/conf.d
+      - ./config/ssl:/etc/nginx/ssl
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - mon_app_exemple
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
