@@ -27,7 +27,7 @@ install_dir="${base_dir}/${IMAGE_NAME}_${IMAGE_TAG}"
 install_dir_scripts="$install_dir/scripts"
 install_dir_docker="$install_dir/docker"
 install_dir_config_file="$install_dir/config.sh"
-install_dir_compose_file="$install_dir_docker/compose.yml"
+install_dir_compose_file="$install_dir_docker/docker-compose.yml"
 
 # ========== PRÉPARATION ==========
 
@@ -133,7 +133,7 @@ copy_files() {
     echo -e "${BLUE}[STEP]${NC} Copie des fichiers vers $install_dir..."
     mkdir -p "$install_dir_scripts" "$install_dir_docker"
 
-    cp "$tmp_mount/docker/compose.yml" "$install_dir_compose_file"
+    cp "$tmp_mount/docker/docker-compose.yml" "$install_dir_compose_file"
     cp "$tmp_mount/scripts/"*.sh "$install_dir_scripts"
     cp "$tmp_mount/config.sh" "$install_dir_config_file"
     cp "$tmp_mount/version.txt" "$install_dir"

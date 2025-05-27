@@ -59,9 +59,9 @@ prepare_bundle() {
     mkdir -p "${TMP_DIR}/scripts" && \
 
     cp "${DOCKER_ARCHIVE}" "${TMP_DIR}/" && \
-    cp "${DOCKER_FOLDER}/compose.yml" "${TMP_DIR}/docker" && \
-    cp start.sh stop.sh restart.sh enter.sh "${TMP_DIR}/scripts" && \
-    cp install.sh uninstall.sh config.sh "${TMP_DIR}/" && echo -e "${GREEN}[OK]${NC} Livrable préparé avec succès." || echo -e "${RED}[ERR]${NC} Erreur lors de la préparation du livrable."
+    cp "${DOCKER_FOLDER}/docker-compose.yml" "${TMP_DIR}/docker" && \
+    cp "${pwd}/start.sh" "${pwd}/stop.sh" "${pwd}restart.sh" "${pwd}/enter.sh" "${TMP_DIR}/scripts" && \
+    cp "${pwd}/install.sh" "${pwd}/uninstall.sh" "${pwd}/config.sh" "${TMP_DIR}/" && echo -e "${GREEN}[OK]${NC} Livrable préparé avec succès." || echo -e "${RED}[ERR]${NC} Erreur lors de la préparation du livrable."
 }
 
 # Fonction : Création du fichier de configuration

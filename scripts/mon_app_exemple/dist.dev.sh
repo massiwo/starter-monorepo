@@ -27,7 +27,7 @@ rm -rf ${ARCHIVE_FOLDER}
 TMP_DIR="${IMAGE_NAME}_${IMAGE_TAG}"
 mkdir -p ${TMP_DIR} ${ARCHIVE_FOLDER}
 cp ${DOCKER_ARCHIVE} ${TMP_DIR}/
-cp ${DOCKER_FOLDER}/compose.yml ${TMP_DIR}/
+cp ${DOCKER_FOLDER}/docker-compose.yml ${TMP_DIR}/
 cp ${DOCKER_FOLDER}/compose.dev.yml ${TMP_DIR}/
 cp start.dev.sh \
    stop.dev.sh \
