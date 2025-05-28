@@ -1,173 +1,229 @@
-// init.js - Script d'initialisation CLI pour une nouvelle app dans le monorepo
+// init.js – Script CLI pour gérer les applications d’un monorepo AdonisJS conforme aux conventions SAE RER
 
-import prompts from 'prompts';
-import fs from 'fs';
-import path from 'path';
-import {execSync} from 'child_process';
+import prompts from 'prompts'
+import fs from 'fs'
+import path from 'path'
+import {execSync} from 'child_process'
 
-const TEMPLATE_APP = 'mon_app_exemple';
-const createdPaths = [];
-let submodulePath = null;
+const TEMPLATE = 'mon_app_exemple.app'
+const createdPaths = []
+let submodulePath = null
 
+// === Sécurité : rollback en cas d’interruption ===
 process.on('SIGINT', () => {
-    console.log('\n❌ Interruption détectée (Ctrl+C).');
-    rollback();
-    process.exit(1);
-});
+    console.log('\n❌ Interruption détectée (Ctrl+C)')
+    rollback()
+    process.exit(1)
+})
 
 process.on('uncaughtException', (err) => {
-    console.error('❌ Erreur inattendue :', err);
-    rollback();
-    process.exit(1);
-});
+    console.error('❌ Erreur inattendue :', err)
+    rollback()
+    process.exit(1)
+})
 
-const rollback = () => {
-    console.log('\n🧹 Annulation en cours...');
+function rollback() {
+    console.log('\n🧹 Annulation des opérations...')
     if (submodulePath) {
         try {
-            console.log(`🔄 Suppression du sous-module Git : ${submodulePath}`);
-            execSync(`git submodule deinit -f ${submodulePath}`);
-            execSync(`git rm -f ${submodulePath}`);
-            fs.rmSync('.git/modules/' + submodulePath, {recursive: true, force: true});
-        } catch (err) {
-            console.log(`⚠️  Échec lors de la suppression du sous-module : ${err.message}`);
+            execSync(`git submodule deinit -f ${submodulePath}`)
+            execSync(`git rm -f ${submodulePath}`)
+            fs.rmSync(`.git/modules/${submodulePath}`, {recursive: true, force: true})
+        } catch (e) {
+            console.log(`⚠️ Échec rollback sous-module : ${e.message}`)
         }
     }
-    createdPaths.reverse().forEach(p => {
-        if (fs.existsSync(p)) {
-            fs.rmSync(p, {recursive: true, force: true});
-            console.log(`🗑️  Supprimé : ${p}`);
+    createdPaths.reverse().forEach((dir) => {
+        if (fs.existsSync(dir)) {
+            fs.rmSync(dir, {recursive: true, force: true})
+            console.log(`🗑️ Supprimé : ${dir}`)
         }
-    });
-};
+    })
+}
 
-const copyDir = (src, dest) => {
-    if (!fs.existsSync(src)) return;
-    fs.mkdirSync(dest, {recursive: true});
-    fs.readdirSync(src).forEach(file => {
-        const srcPath = path.join(src, file);
-        const destPath = path.join(dest, file);
-        const stat = fs.statSync(srcPath);
+// === Fonctions utilitaires ===
+function isValidAppName(name) {
+    return /^[a-z0-9_]+\.app$/.test(name)
+}
 
-        if (stat.isFile()) {
-            const content = fs.readFileSync(srcPath, 'utf8');
-            fs.writeFileSync(destPath, content);
-            fs.chmodSync(destPath, stat.mode);
-        } else if (stat.isDirectory()) {
-            copyDir(srcPath, destPath);
+function stripAppSuffix(name) {
+    return name.replace(/\.app$/, '')
+}
+
+function copyDir(src, dest) {
+    if (!fs.existsSync(src)) return
+    fs.mkdirSync(dest, {recursive: true})
+    fs.readdirSync(src).forEach((file) => {
+        const srcPath = path.join(src, file)
+        const destPath = path.join(dest, file)
+        const stat = fs.statSync(srcPath)
+        if (stat.isDirectory()) {
+            copyDir(srcPath, destPath)
+        } else {
+            fs.copyFileSync(srcPath, destPath)
+            fs.chmodSync(destPath, stat.mode)
         }
-    });
-};
+    })
+}
 
-const replaceInFile = (filePath, from, to) => {
-    if (!fs.existsSync(filePath)) return;
-    const content = fs.readFileSync(filePath, 'utf8');
-    fs.writeFileSync(filePath, content.replaceAll(from, to));
-};
 
-const replaceInAllFiles = (dir, from, to) => {
+function replaceInFile(filePath, from, to) {
+    if (!fs.existsSync(filePath)) return
+    const content = fs.readFileSync(filePath, 'utf-8')
+    fs.writeFileSync(filePath, content.replaceAll(from, to))
+}
+
+function replaceInAllFiles(dir, from, to) {
     if (!fs.existsSync(dir)) return;
-    console.log(`🔍 Remplacement de '${from}' dans tous les fichiers de ${dir}`);
     fs.readdirSync(dir).forEach(file => {
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
         if (stat.isFile()) {
             replaceInFile(filePath, from, to);
+        } else if (stat.isDirectory()) {
+            replaceInAllFiles(filePath, from, to); // 🔁 récursif
         }
     });
-};
+}
 
-const addServiceToDockerCompose = (composePath, appName) => {
-    if (!fs.existsSync(composePath)) return;
-    console.log(`➕ Ajout du service '${appName}' dans ${composePath}`);
-    const content = fs.readFileSync(composePath, 'utf8');
-    const newService = `  ${appName}:
+function replaceInDir(dir, from, to) {
+    if (!fs.existsSync(dir)) return
+    fs.readdirSync(dir).forEach((file) => {
+        const filePath = path.join(dir, file)
+        if (fs.statSync(filePath).isFile()) {
+            replaceInFile(filePath, from, to)
+        }
+    })
+}
+
+function addToDockerCompose(filePath, serviceName) {
+    if (!fs.existsSync(filePath)) return
+    const content = fs.readFileSync(filePath, 'utf-8')
+    if (content.includes(`  ${serviceName}:`)) return
+
+    const newService = `  ${serviceName}:
+    image: ${serviceName}:latest
+    container_name: ${serviceName}
     build:
-      image: $\{IMAGE:-mon_app_exemple\}:latest
-      container_name: mon_app_exemple
-      build:
-        args:
-          - IMAGE=$\{IMAGE:-mon_app_exemple\}
-        context: ..
-        dockerfile: docker/${appName}/build.Dockerfile
+      context: ..
+      dockerfile: docker/${serviceName}/build.Dockerfile
     ports:
-      - "${appName === 'mon_app_exemple' ? '3333' : 'auto_à_adapter'}:3333"
-`;
-    if (!content.includes(`  ${appName}:`)) {
-        const updated = content.replace(/services:\n/, match => match + newService);
-        fs.writeFileSync(composePath, updated);
-    }
-};
+      - "auto_configurer:3333"
+`
 
-const deleteDirectory = dir => {
-    if (fs.existsSync(dir)) {
-        fs.rmSync(dir, {recursive: true, force: true});
-        console.log(`🗑️  Supprimé : ${dir}`);
-    }
-};
+    const updated = content.replace(/services:\n/, (match) => match + newService)
+    fs.writeFileSync(filePath, updated)
+}
 
-const removeServiceFromDockerCompose = (composePath, appName) => {
+const renameServiceInDockerCompose = (composePath, oldAppName, newAppName) => {
     if (!fs.existsSync(composePath)) return;
-    const content = fs.readFileSync(composePath, 'utf8');
-    const lines = content.split('\n');
 
-    const startIndex = lines.findIndex(line => line.match(new RegExp(`^\\s*${appName}:\\s*$`)));
-    if (startIndex === -1) return;
+    const oldService = oldAppName.replace(/\.app$/, '');
+    const newService = newAppName.replace(/\.app$/, '');
 
-    // Suppression du bloc de service (jusqu'à la prochaine ligne de même niveau ou fin du fichier)
-    const indentLevel = lines[startIndex].match(/^(\s*)/)[1].length;
-    let endIndex = startIndex + 1;
+    let content = fs.readFileSync(composePath, 'utf8');
 
-    while (
-        endIndex < lines.length &&
-        (lines[endIndex].startsWith(' '.repeat(indentLevel + 1)) || lines[endIndex].trim() === '')
-        ) {
-        endIndex++;
-    }
+    content = content
+        .replaceAll(`${oldService}:`, `${newService}:`)
+        .replaceAll(`image: ${oldService}:`, `image: ${newService}:`)
+        .replaceAll(`container_name: ${oldService}`, `container_name: ${newService}`)
+        .replaceAll(`docker/${oldService}/`, `docker/${newService}/`);
 
-    lines.splice(startIndex, endIndex - startIndex);
-    fs.writeFileSync(composePath, lines.join('\n'));
-    console.log(`➖ Service '${appName}' supprimé de ${composePath}`);
+    fs.writeFileSync(composePath, content, 'utf8');
+    console.log(`✏️  Service renommé dans ${composePath} (${oldService} → ${newService})`);
 };
 
-const validatePackageJson = (appPath, appName) => {
-    const pkgPath = path.join(appPath, 'package.json');
-    if (!fs.existsSync(appPath) || !fs.existsSync(pkgPath)) {
-        console.log('❌ Application non trouvée ou package.json manquant.');
-        process.exit(1);
-    }
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    if (pkg.name !== appName) {
-        console.log(`⚠️  Le nom de package (${pkg.name}) ne correspond pas à ${appName}. Mise à jour...`);
-        pkg.name = appName;
-        fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
-        console.log('✅ Nom du package mis à jour.');
-    }
-};
+function removeFromDockerCompose(filePath, serviceName) {
+    if (!fs.existsSync(filePath)) return
+    const lines = fs.readFileSync(filePath, 'utf-8').split('\n')
+    const index = lines.findIndex((line) => line.trim() === `${serviceName}:`)
+    if (index === -1) return
 
-(async () => {
-    console.log('🛠️  Initialisation d’une nouvelle application dans le monorepo');
+    let end = index + 1
+    const indent = lines[index].search(/\S/)
+    while (end < lines.length && (lines[end].startsWith(' '.repeat(indent + 1)) || lines[end].trim() === '')) {
+        end++
+    }
 
-    const appsList = fs.readdirSync('apps')
-        .filter(entry => fs.statSync(`apps/${entry}`).isDirectory());
+    lines.splice(index, end - index)
+    fs.writeFileSync(filePath, lines.join('\n'))
+}
+
+function validatePackageJson(appPath, appName) {
+    const pkgPath = path.join(appPath, 'package.json')
+    if (!fs.existsSync(pkgPath)) return
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+    const expected = appName
+    if (pkg.name !== expected) {
+        pkg.name = expected
+        fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
+        console.log(`✅ package.json corrigé avec name: "${expected}"`)
+    }
+}
+
+function deleteIfExists(pathToDelete) {
+    if (fs.existsSync(pathToDelete)) {
+        fs.rmSync(pathToDelete, {recursive: true, force: true})
+        console.log(`🗑️ Supprimé : ${pathToDelete}`)
+    }
+}
+
+// === Script principal ===
+;(async () => {
+    console.log('🛠️  Initialisation d’une application dans le monorepo SAE RER')
+
+    const appsList = fs.readdirSync('apps').filter((dir) => fs.statSync(`apps/${dir}`).isDirectory())
 
     const {method} = await prompts({
         type: 'select',
         name: 'method',
-        message: 'Méthode à effectuer :',
+        message: 'Quelle action souhaitez-vous effectuer ?',
         choices: [
-            {title: 'Ajouter une application comme sous-module à partir d’un dépôt', value: 'submodule'},
-            {title: 'Copier manuellement une application dans ./apps', value: 'manual'},
-            {title: 'Dupliquer une application existante depuis ./apps', value: 'duplicate'},
-            {title: 'Supprimer une application existante', value: 'delete'}
+            {title: 'Ajouter une application (sous-module Git)', value: 'submodule'},
+            {title: 'Dupliquer une application existante', value: 'duplicate'},
+            {title: 'Copier manuellement une application', value: 'manual'},
+            {title: 'Renommer une application', value: 'rename'},
+            {title: 'Supprimer une application', value: 'delete'}
         ]
-    });
+    })
 
-    let appName;
-    let appPath;
+    let appName = ''
+    let appPath = ''
 
     if (method === 'delete') {
+        if (appsList.length === 0) {
+            console.log('❌ Aucune application trouvée.')
+            return
+        }
 
+        const {selectedApp} = await prompts({
+            type: 'select',
+            name: 'selectedApp',
+            message: 'Sélectionnez l’application à supprimer',
+            choices: appsList.map((app) => ({title: app, value: app}))
+        })
+
+        appName = selectedApp
+        const serviceName = stripAppSuffix(appName)
+
+        const {confirm} = await prompts({
+            type: 'confirm',
+            name: 'confirm',
+            message: `Confirmer la suppression de "${appName}" (apps/, docker/, scripts/, docker-compose) ?`,
+            initial: false
+        })
+
+        if (!confirm) return
+
+        removeFromDockerCompose('docker/docker-compose.yml', serviceName)
+        removeFromDockerCompose('docker/docker-compose.dev.yml', serviceName)
+        deleteIfExists(`apps/${appName}`)
+        deleteIfExists(`scripts/${serviceName}`)
+        deleteIfExists(`docker/${serviceName}`)
+        return
+    }
+
+    if (method === 'rename') {
         if (appsList.length === 0) {
             console.log('❌ Aucune application trouvée dans ./apps.');
             process.exit(1);
@@ -176,125 +232,126 @@ const validatePackageJson = (appPath, appName) => {
         const {selectedApp} = await prompts({
             type: 'select',
             name: 'selectedApp',
-            message: 'Sélectionnez l’application à supprimer :',
+            message: 'Sélectionnez l’application à renommer :',
             choices: appsList.map(app => ({title: app, value: app}))
         });
 
-        appName = selectedApp;
-        appPath = `apps/${appName}`;
 
-        const {confirm} = await prompts({
-            type: 'confirm',
-            name: 'confirm',
-            message: `Êtes-vous sûr de vouloir supprimer l'application "${appName}" (ainsi que ses dossiers docker/ et scripts/) ?`,
-            initial: false
+        const oldName = selectedApp.replace(/\.app$/, '');
+        const oldAppPath = `apps/${oldName}.app`;
+        const oldDockerPath = `docker/${oldName}`;
+        const oldScriptsPath = `scripts/${oldName}`;
+
+        console.log(`🔄 Renommage de l'application "${oldName}"...`);
+        console.log(`Chemins actuels :\n- Application : ${oldAppPath}\n- Docker : ${oldDockerPath}\n- Scripts : ${oldScriptsPath}`);
+
+
+        const {newRawName} = await prompts({
+            type: 'text',
+            name: 'newRawName',
+            message: 'Nouveau nom de l’application (ex: login ou login.app)',
+            validate: (val) =>
+                /^[a-z0-9_]+(\.app)?$/.test(val) ? true : 'Nom invalide (caractères autorisés : a-z, 0-9, _)'
         });
 
-        if (confirm) {
-            removeServiceFromDockerCompose('docker/docker-compose.yml', appName);
-            removeServiceFromDockerCompose('docker/docker-compose.dev.yml', appName);
-            deleteDirectory(appPath);
-            deleteDirectory(`docker/${appName}`);
-            deleteDirectory(`scripts/${appName}`);
-        } else {
-            console.log('❌ Suppression annulée.');
+        const newName = newRawName.replace(/\.app$/, '');
+
+        if (appsList.includes(newName)) {
+            console.log(`❌ Une application nommée "${newName}" existe déjà.`);
+            process.exit(1);
         }
+
+        const newAppPath = `apps/${newName.endsWith('.app') ? newName : `${newName}.app`}`;
+        const newDockerPath = `docker/${newName}`;
+        const newScriptsPath = `scripts/${newName}`;
+
+        fs.renameSync(oldAppPath, newAppPath);
+        if (fs.existsSync(oldDockerPath)) fs.renameSync(oldDockerPath, newDockerPath);
+        if (fs.existsSync(oldScriptsPath)) fs.renameSync(oldScriptsPath, newScriptsPath);
+
+        replaceInAllFiles(newDockerPath, oldName, newName);
+        replaceInAllFiles(newScriptsPath, oldName, newName);
+
+        renameServiceInDockerCompose('docker/docker-compose.yml', oldName, newName);
+        renameServiceInDockerCompose('docker/docker-compose.dev.yml', oldName, newName);
+
+        console.log(`✅ Application renommée de "${oldName}" vers "${newName}"`);
         return;
     }
 
-    const {name} = await prompts({
+    const {name: rawName} = await prompts({
         type: 'text',
         name: 'name',
-        message: 'Nom de la nouvelle application :',
-        validate: name => /^[a-z0-9_-]+$/.test(name) ? true : 'Nom invalide (a-z, 0-9, _ et - uniquement)'
-    });
+        message: 'Nom de l’application (ex: guda ou guda.app)',
+        validate: (val) =>
+            /^[a-z0-9_]+(\.app)?$/.test(val) ? true : 'Nom invalide (caractères autorisés : a-z, 0-9, _)'
+    })
 
-    appName = name
-    appPath = `apps/${appName}`;
+    appName = rawName.endsWith('.app') ? rawName : `${rawName}.app`
 
-    if (!appName) {
-        console.log('❌ Aucune application n’a été créée.');
-        process.exit(1);
-    }
+    appPath = `apps/${appName}`
+    const serviceName = stripAppSuffix(appName)
 
     if (method === 'submodule') {
         const {repo} = await prompts({
             type: 'text',
             name: 'repo',
-            message: 'URL du dépôt Git à utiliser comme sous-module :'
-        });
+            message: 'URL du dépôt Git distant'
+        })
 
-        if (!repo) {
-            console.log('❌ Aucune URL fournie.');
-            process.exit(1);
-        }
-
-        console.log(`🔗 Ajout du sous-module ${repo} dans ${appPath}`);
-        execSync(`git submodule add ${repo} ${appPath}`, {stdio: 'inherit'});
-        validatePackageJson(appPath, appName);
-        return;
+        submodulePath = appPath
+        execSync(`git submodule add ${repo} ${appPath}`, {stdio: 'inherit'})
+        validatePackageJson(appPath, appName)
+        return
     }
 
     if (method === 'duplicate') {
-
-        if (appsList.length === 0) {
-            console.log('❌ Aucune application trouvée dans ./apps.');
-            process.exit(1);
-        }
-
+        if (appsList.length === 0) return
         const {selectedApp} = await prompts({
             type: 'select',
             name: 'selectedApp',
-            message: 'Sélectionnez l’application à duppliquer :',
-            choices: appsList.map(app => ({title: app, value: app}))
-        });
+            message: 'App source à dupliquer',
+            choices: appsList.map((app) => ({title: app, value: app}))
+        })
 
-        const appSrc = `apps/${selectedApp}`;
-        copyDir(appSrc, appPath);
-        validatePackageJson(appPath, appName);
-    } else if (method === 'manual') {
-        console.log(`📂 Veuillez copier manuellement votre application dans ${appPath}`);
-
-        const {confirmManual} = await prompts({
-            type: 'confirm',
-            name: 'confirmManual',
-            message: `Avez-vous bien copié votre application dans ${appPath} ?`,
-            initial: true
-        });
-
-        if (!confirmManual) {
-            console.log('❌ Copie manuelle non confirmée.');
-            process.exit(1);
-        }
-
-        validatePackageJson(appPath, appName);
+        copyDir(`apps/${selectedApp}`, appPath)
+        createdPaths.push(appPath)
+        validatePackageJson(appPath, appName)
     }
 
-    console.log(`🚀 Création de l'application : ${appName}\n`);
+    if (method === 'manual') {
+        console.log(`📂 Copiez manuellement votre application dans : ${appPath}`)
 
-    const dockerSrc = `docker/${TEMPLATE_APP}`;
-    const dockerDest = `docker/${appName}`;
-    copyDir(dockerSrc, dockerDest);
-    createdPaths.push(dockerDest);
+        const {confirm} = await prompts({
+            type: 'confirm',
+            name: 'confirm',
+            message: 'Validez après avoir copié et renommé correctement la structure ?',
+            initial: true
+        })
 
-    const scriptsSrc = `scripts/${TEMPLATE_APP}`;
-    const scriptsDest = `scripts/${appName}`;
-    copyDir(scriptsSrc, scriptsDest);
-    createdPaths.push(scriptsDest);
+        if (!confirm) return
+        validatePackageJson(appPath, appName)
+    }
 
-    replaceInFile(`${dockerDest}/build.Dockerfile`, TEMPLATE_APP, appName);
-    replaceInAllFiles(scriptsDest, TEMPLATE_APP, appName);
+    console.log(`🚀 Génération des dossiers Docker & scripts pour : ${appName}`)
 
-    addServiceToDockerCompose('docker/docker-compose.yml', appName);
-    addServiceToDockerCompose('docker/docker-compose.dev.yml', appName);
+    const dockerPath = `docker/${serviceName}`
+    const scriptsPath = `scripts/${serviceName}`
 
-    console.log(`\n✅ Application "${appName}" initialisée avec succès.`);
+    copyDir(`docker/${stripAppSuffix(TEMPLATE)}`, dockerPath)
+    createdPaths.push(dockerPath)
 
-    console.log(`\n╭────────────────────────────────────────────╮`);
-    console.log(`│ 📦 Prochaine étape                          │`);
-    console.log(`├────────────────────────────────────────────┤`);
-    console.log(`│ › pnpm install                             │`);
-    console.log(`│ › pnpm --filter=${appName} run dev       │`);
-    console.log(`│ › Documentation interne : ./README.md     │`);
-    console.log(`╰────────────────────────────────────────────╯`);
-})();
+    copyDir(`scripts/${stripAppSuffix(TEMPLATE)}`, scriptsPath)
+    createdPaths.push(scriptsPath)
+
+    replaceInFile(`${dockerPath}/build.Dockerfile`, stripAppSuffix(TEMPLATE), serviceName)
+    replaceInDir(scriptsPath, stripAppSuffix(TEMPLATE), serviceName)
+
+    addToDockerCompose('docker/docker-compose.yml', serviceName)
+    addToDockerCompose('docker/docker-compose.dev.yml', serviceName)
+
+    console.log(`\n✅ Application "${appName}" initialisée avec succès.`)
+    console.log(`\n🧭 Étapes suivantes :`)
+    console.log(`pnpm install`)
+    console.log(`pnpm --filter=${appName} run dev`)
+})()
