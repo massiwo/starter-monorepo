@@ -125,3 +125,8 @@ git submodule update --remote packages/design-system
 pnpm install
 pnpm update
 ```
+
+## 📚 Conventions de nommage
+
+Les conventions de nommage pour les applications, images Docker, services, scripts et variables sont détaillées dans le
+fichier suivant : [docs/conventions-nommage.md](docs/conventions-nommage.md)
