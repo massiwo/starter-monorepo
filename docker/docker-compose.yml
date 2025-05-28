@@ -23,13 +23,13 @@ services:
     environment:
       # Variables d'environnement pour AdonisJS
       - NODE_ENV=production
-      - APP_NAME=PORTAL
+      - APP_NAME=mon_app_exemple
       - LIGNE_NAME=B
       - TZ=UTC
       - PORT=8080
       - HOST=0.0.0.0
       - LOG_LEVEL=debug
-      - LOG_FILE=/var/log/application/PORTAL.backend.log
+      - LOG_FILE=/var/log/application/mon_app_exemple.backend.log
       - APP_KEY=SPlJYlMrLAgV5H97d-Nu9qB_XCBNH3RR
       - SESSION_DRIVER=cookie
       # Configuration de la base de données
@@ -43,9 +43,9 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
     expose:
-      - "8080"  # Port exposé par Adonis en production (build/server.js)
+      - "8080" # Port exposé par Adonis en production (build/server.js)
     ports:
-      - "8080:8080"  # Port exposé par Adonis en production (build/server.js)
+      - "8080:8080" # Port exposé par Adonis en production (build/server.js)
     depends_on:
       - redis
     restart: unless-stopped
