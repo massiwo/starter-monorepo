@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Répertoire enfant
-CHILD_DIR="../../apps/mon_app_exemple"
+CHILD_DIR="../../apps/mon_app_exemple.app"
 
 # Sauvegarde du répertoire courant
 CURRENT_DIR=$(pwd)
