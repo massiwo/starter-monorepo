@@ -68,7 +68,7 @@ Assurez-vous de :
 * Vérifier les variables d’environnement nécessaires
 * Corriger l’image et le container_name si besoin
 
-## 🚀 **🚀 Étape 5 – Démarrer votre application**
+## 🚀 **Étape 5 – Démarrer votre application**
 
 Pour démarrer votre application, utilisez les commandes suivantes :
 
@@ -77,10 +77,4 @@ pnpm run dev                         # Démarre toutes les apps
 pnpm --filter=<nom-app> run dev      # Démarre uniquement votre application
 ```
 
-## 📎 **Exemple complet disponible :**
-
-Consultez :
-
-* `apps/mon_app_exemple`
-* `docker/mon_app_exemple`
-* `scripts/mon_app_exemple`
+Afin de vous accompagner dans le développement, vous pouvez également consulter la documentation de l'application

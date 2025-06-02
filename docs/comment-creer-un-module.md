@@ -1,6 +1,11 @@
-# 📦 Module `mon_module`
+# 📦 Module `mon_exemple_de_module`
 
-Bienvenue dans ce dossier dédié au module `mon_module`.
+Bienvenue dans ce dossier dédié au module `mon_exemple_de_module` de l'application `mon_app_exemple.app` !
+Vous l'aurez compris, ce module est un exemple fictif pour illustrer la structure et les bonnes pratiques.
+La structure de ce module vous a été fournie pour vous aider à démarrer rapidement dans la création de vos propres
+modules.
+Il s'adresse à tous les développeurs souhaitant comprendre comment organiser leur code de manière modulaire et
+maintenable.
 
 ---
 
@@ -23,10 +28,14 @@ fonctionnement, en suivant le principe de **cohésion fonctionnelle**.
 
 Un module :
 
-- A **un nom clair** (souvent un nom commun au singulier)
-- Est **cohérent dans ses responsabilités**
-- Est **autonome dans sa logique métier**
-- Peut généralement **vivre indépendamment** des autres (ou presque)
+- Possède **un nom clair** (souvent un nom commun au singulier)
+- Est **cohérent dans ses responsabilités** (ex : `auth` ou `authentification` gère tout ce qui touche à
+  l'authentification et non les utilisateurs)
+- Est **autonome dans sa logique métier** (ex : `auth` gère l'authentification sans dépendre d'autres modules)
+- Peut être **testé indépendamment** (ex : les tests unitaires du module `auth` ne doivent pas nécessiter d'autres
+  modules)
+- peut être **réutilisé dans d’autres projets** (ex : le module `auth` peut être intégré dans une autre application sans
+  dépendances fortes)
 
 > 👉 Si vous vous posez la question “Est-ce que ça mérite un module ?”  
 > Demandez-vous : “Est-ce que ce bloc pourrait être isolé, testé, versionné ou documenté seul ?”  
@@ -36,7 +45,7 @@ Un module :
 
 ## 🧱 Structure du module
 
-Chaque module suit cette structure :
+Chaque module est situé dans `<racine>/apps/mon_app_exemple.app/app/` et suit cette structure :
 
 ```
 <mon_module>/
