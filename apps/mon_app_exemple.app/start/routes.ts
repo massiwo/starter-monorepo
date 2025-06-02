@@ -7,6 +7,4 @@
 |
 */
 
-import router from '@adonisjs/core/services/router'
-
-router.on('/').renderInertia('home')
+import '#mon_exemple_de_module/routes/mon_exemple_de_module_routes'

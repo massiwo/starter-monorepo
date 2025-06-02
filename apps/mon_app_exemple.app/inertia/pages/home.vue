@@ -1,5 +1,9 @@
 <script lang="ts" setup>
 import { Head } from '@inertiajs/vue3'
+
+const { appName = 'Homepage' } = defineProps<{
+  appName?: string
+}>()
 </script>
 
 <template>
@@ -11,7 +15,9 @@ import { Head } from '@inertiajs/vue3'
 
   <div class="pt-4 h-full flex flex-col">
     <!-- Header -->
-    <div class="grow pb-4 bg-gradient-to-b from-sand-1 to-sand-2 flex justify-center items-center">
+    <div
+      class="grow pb-4 bg-gradient-to-b from-sand-1 to-sand-2 flex gap-2 justify-center items-center"
+    >
       <a class="isolate" href="https://adonisjs.com" target="_blank">
         <svg class="w-16 h-16 fill-primary" viewBox="0 0 33 33">
           <path
@@ -21,6 +27,9 @@ import { Head } from '@inertiajs/vue3'
           />
         </svg>
       </a>
+      <h1 class="text-3xl font-bold text-sand-12">
+        Bienvenue sur <span class="text-primary">{{ appName }}</span>
+      </h1>
     </div>
 
     <!-- Bento with documentation, Adocasts, packages and Discord -->
