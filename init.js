@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import {execSync} from 'child_process';
 import yaml from 'yaml';
+import {minimatch} from 'minimatch';
 
 const ROOT = process.cwd();
 
@@ -10,13 +11,31 @@ const appsDir = path.join(ROOT, 'apps');
 const dockerTemplate = path.join(ROOT, 'docker/mon_app_exemple');
 const scriptsTemplate = path.join(ROOT, 'scripts/mon_app_exemple');
 
+// Gère Ctrl+C proprement
+process.on('SIGINT', () => {
+    console.log('\n❌ Opération annulée par l’utilisateur.');
+    process.exit(0);
+});
+
+const defaultPatterns = [
+    '*.sh',
+    '*.yml',
+    '*.conf',
+    '*.Dockerfile',
+    '*.json',
+    '*.ts',
+    '*.js',
+    '.env',
+    'Dockerfile'
+];
+
 const appChoices = [
     {title: 'Ajouter une application (sous-module Git)', value: 'add-submodule-app'},
     {title: 'Dupliquer depuis une application existante', value: 'duplicate-app'},
     {title: 'Copie manuelle (application déjà ajoutée)', value: 'manual-copy'},
     {title: 'Renommer une application existante', value: 'rename-app'},
     {title: 'Supprimer une application existante', value: 'delete-app'},
-    {title: 'Ajouter un package (sous-module Git)', value: 'add-submodule-package'},
+    {title: 'Ajouter un package (sous-module Git)', value: 'add-submodule-package'}
 ];
 
 const response = await prompts({
@@ -27,13 +46,6 @@ const response = await prompts({
 });
 
 const {action} = response;
-
-// Gère Ctrl+C proprement
-process.on('SIGINT', () => {
-    console.log('\n❌ Opération annulée par l’utilisateur.');
-    process.exit(0);
-});
-
 
 const askAppName = async (label = 'Nom de l’application') => {
     const {name} = await prompts({
@@ -54,25 +66,18 @@ const copyTemplateDir = (source, dest) => {
     });
 };
 
-const replaceInFiles = (dir, search, replace) => {
-    const files = fs.readdirSync(dir).filter(f => f.endsWith('.sh'));
-    files.forEach(file => {
-        const filePath = path.join(dir, file);
-        let content = fs.readFileSync(filePath, 'utf8');
-        content = content.replaceAll(search, replace);
-        fs.writeFileSync(filePath, content, 'utf8');
-    });
-};
-
-const replaceInAllFiles = (dir, search, replace, exts = ['.sh', '.yml', '.Dockerfile', '.conf', '.json', '.ts', '.js']) => {
+const replaceInAllFiles = (dir, search, replace, patterns = defaultPatterns) => {
     const entries = fs.readdirSync(dir, {withFileTypes: true});
 
     for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
 
         if (entry.isDirectory()) {
-            replaceInAllFiles(fullPath, search, replace, exts);
-        } else if (exts.includes(path.extname(entry.name))) {
+            replaceInAllFiles(fullPath, search, replace, patterns);
+        } else if (
+            entry.isFile() &&
+            patterns.some(pattern => minimatch(entry.name, pattern))
+        ) {
             let content = fs.readFileSync(fullPath, 'utf8');
             const replaced = content.replaceAll(search, replace);
             if (replaced !== content) {
@@ -86,11 +91,9 @@ const replaceInObject = (obj, search, replace) => {
     if (typeof obj === 'string') {
         return obj.replaceAll(search, replace);
     }
-
     if (Array.isArray(obj)) {
         return obj.map(item => replaceInObject(item, search, replace));
     }
-
     if (typeof obj === 'object' && obj !== null) {
         const newObj = {};
         for (const key in obj) {
@@ -98,7 +101,6 @@ const replaceInObject = (obj, search, replace) => {
         }
         return newObj;
     }
-
     return obj;
 };
 
@@ -117,7 +119,11 @@ const updateDockerComposeAddService = (composePath, serviceName, baseServiceName
     const baseJs = base.toJSON();
     const customized = replaceInObject(baseJs, baseServiceName, serviceName);
     doc.setIn(['services', serviceName], customized);
-
+    const servicesMap = doc.get('services');
+    const node = servicesMap.items.find(item => item.key.value === serviceName);
+    if (node) {
+        node.commentBefore = `=== Service généré automatiquement : ${serviceName} ===`;
+    }
     fs.writeFileSync(composePath, doc.toString(), 'utf8');
 };
 
@@ -136,7 +142,6 @@ const updateDockerComposeRenameService = (composePath, oldName, newName) => {
 
     doc.setIn(['services', newName], renamedConfig);
     doc.deleteIn(['services', oldName]);
-
     fs.writeFileSync(composePath, doc.toString(), 'utf8');
 };
 
@@ -150,18 +155,39 @@ const updateDockerComposeRemoveService = (composePath, serviceName) => {
     }
 };
 
+const printOutro = (name) => {
+    console.log('\n✨ Prochaines étapes :');
+    console.log(`\n  1. 📦 Installer les dépendances :`);
+    console.log(`     pnpm install`);
+    console.log(`\n  2. 🚀 Démarrer votre application :`);
+    console.log(`     pnpm --filter ${name} run dev`);
+    console.log(`\n  3. 🌍 Accéder à l'app (si exposée sur port 3333) :`);
+    console.log(`     http://localhost:3333\n`);
+};
+
 try {
     switch (action) {
         case 'add-submodule-app': {
             const name = await askAppName();
+            const appPath = `apps/${name}.app`;
+
+            if (fs.existsSync(appPath)) {
+                console.error(`❌ L'application "${name}" existe déjà.`);
+                process.exit(1);
+            }
+
             const {url} = await prompts({
                 type: 'text',
                 name: 'url',
                 message: 'URL du sous-module Git :'
             });
 
-            const appPath = `apps/${name}.app`;
-            execSync(`git submodule add ${url} ${appPath}`);
+            try {
+                execSync(`git submodule add ${url} ${appPath}`, {stdio: 'inherit'});
+            } catch (err) {
+                console.error('❌ Échec de l’ajout du sous-module Git :', err.message);
+                process.exit(1);
+            }
 
             copyTemplateDir(dockerTemplate, `docker/${name}`);
             copyTemplateDir(scriptsTemplate, `scripts/${name}`);
@@ -170,6 +196,7 @@ try {
             updateDockerComposeAddService('docker/docker-compose.dev.yml', name, 'mon_app_exemple');
 
             console.log(`✅ Application "${name}" ajoutée avec sous-module.`);
+            printOutro(name);
             break;
         }
 
@@ -183,7 +210,13 @@ try {
             });
 
             const newName = await askAppName();
-            fs.cpSync(`apps/${from}`, `apps/${newName}.app`, {recursive: true});
+            const newAppPath = `apps/${newName}.app`;
+            if (fs.existsSync(newAppPath)) {
+                console.error(`❌ Une application "${newName}" existe déjà.`);
+                process.exit(1);
+            }
+
+            fs.cpSync(`apps/${from}`, newAppPath, {recursive: true});
 
             copyTemplateDir(dockerTemplate, `docker/${newName}`);
             copyTemplateDir(scriptsTemplate, `scripts/${newName}`);
@@ -191,10 +224,12 @@ try {
             updateDockerComposeAddService('docker/docker-compose.yml', newName, 'mon_app_exemple');
             updateDockerComposeAddService('docker/docker-compose.dev.yml', newName, 'mon_app_exemple');
 
+            replaceInAllFiles(`apps/${newName}.app`, from.replace('.app', ''), newName);
             replaceInAllFiles(`docker/${newName}`, from.replace('.app', ''), newName);
             replaceInAllFiles(`scripts/${newName}`, from.replace('.app', ''), newName);
 
             console.log(`✅ Application "${newName}" dupliquée depuis "${from}".`);
+            printOutro(newName);
             break;
         }
 
@@ -218,12 +253,12 @@ try {
             copyTemplateDir(scriptsTemplate, `scripts/${name}`);
 
             console.log(`✅ Configuration Docker et scripts ajoutés à "${name}".`);
+            printOutro(name);
             break;
         }
 
         case 'rename-app': {
             const apps = fs.readdirSync(appsDir).filter(f => f.endsWith('.app') && !fs.existsSync(path.join('apps', f, '.git')));
-
             const {from} = await prompts({
                 type: 'select',
                 name: 'from',
@@ -232,18 +267,24 @@ try {
             });
 
             const newName = await askAppName('Nouveau nom de l’application');
-            fs.renameSync(`apps/${from}`, `apps/${newName}.app`);
-            fs.renameSync(`docker/${from.replace('.app', '')}`, `docker/${newName}`);
-            fs.renameSync(`scripts/${from.replace('.app', '')}`, `scripts/${newName}`);
+            const oldBase = from.replace('.app', '');
+            const newAppPath = `apps/${newName}.app`;
 
-            updateDockerComposeRenameService('docker/docker-compose.yml', from.replace('.app', ''), newName);
-            updateDockerComposeRenameService('docker/docker-compose.dev.yml', from.replace('.app', ''), newName);
+            if (fs.existsSync(newAppPath)) {
+                console.error(`❌ Une application "${newName}" existe déjà.`);
+                process.exit(1);
+            }
 
-            replaceInFiles(`docker/${newName}`, from.replace('.app', ''), newName);
-            replaceInFiles(`scripts/${newName}`, from.replace('.app', ''), newName);
+            fs.renameSync(`apps/${from}`, newAppPath);
+            fs.renameSync(`docker/${oldBase}`, `docker/${newName}`);
+            fs.renameSync(`scripts/${oldBase}`, `scripts/${newName}`);
 
-            replaceInAllFiles(`docker/${newName}`, from.replace('.app', ''), newName);
-            replaceInAllFiles(`scripts/${newName}`, from.replace('.app', ''), newName);
+            updateDockerComposeRenameService('docker/docker-compose.yml', oldBase, newName);
+            updateDockerComposeRenameService('docker/docker-compose.dev.yml', oldBase, newName);
+
+            replaceInAllFiles(`apps/${newName}.app`, oldBase, newName);
+            replaceInAllFiles(`docker/${newName}`, oldBase, newName);
+            replaceInAllFiles(`scripts/${newName}`, oldBase, newName);
 
             console.log(`✅ Application "${from}" renommée en "${newName}".`);
             break;
@@ -289,7 +330,6 @@ try {
             break;
         }
 
-
         case 'add-submodule-package': {
             const {name} = await prompts({
                 type: 'text',
@@ -303,8 +343,14 @@ try {
                 message: 'URL du sous-module Git du package :'
             });
 
-            execSync(`git submodule add ${url} packages/${name}`);
-            console.log(`✅ Package "${name}" ajouté comme sous-module.`);
+            try {
+                execSync(`git submodule add ${url} packages/${name}`, {stdio: 'inherit'});
+                console.log(`✅ Package "${name}" ajouté comme sous-module.`);
+            } catch (err) {
+                console.error('❌ Échec de l’ajout du package :', err.message);
+                process.exit(1);
+            }
+
             break;
         }
 
