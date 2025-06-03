@@ -1,6 +1,6 @@
 import env from '#start/env'
 import app from '@adonisjs/core/services/app'
-import { defineConfig, targets } from '@adonisjs/core/logger'
+import {defineConfig, targets} from '@adonisjs/core/logger'
 
 const loggerConfig = defineConfig({
   default: 'app',
@@ -14,10 +14,11 @@ const loggerConfig = defineConfig({
       enabled: true,
       name: env.get('APP_NAME'),
       level: env.get('LOG_LEVEL'),
+      timestamp: () => `,"timestamp":"${new Date().toLocaleString('fr-FR', {timeZone: 'Europe/Paris'})}"`,
       transport: {
         targets: targets()
           .pushIf(!app.inProduction, targets.pretty())
-          .pushIf(app.inProduction, targets.file({ destination: 1 }))
+          .pushIf(app.inProduction, targets.file({destination: 1}))
           .toArray(),
       },
     },
@@ -31,5 +32,6 @@ export default loggerConfig
  * in your application.
  */
 declare module '@adonisjs/core/types' {
-  export interface LoggersList extends InferLoggers<typeof loggerConfig> {}
+  export interface LoggersList extends InferLoggers<typeof loggerConfig> {
+  }
 }
