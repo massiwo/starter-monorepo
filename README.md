@@ -49,11 +49,33 @@ cd <mon-projet>
 pnpm install
 ```
 
-3. **Lancer l’environnement de développement :**
+2. **Configurer les variables d'environnement AdonisJs pour l'environnement de développement :**
+
+Rendez-vous dans le dossier de l'application AdonisJS que vous souhaitez configurer (par exemple, `apps/<nom-app>`) et
+Copiez le fichier `.env.example` en `.env` et modifiez les variables selon vos besoins.
+Assurez-vous de configurer les variables suivantes :
+
+```dotenv
+TZ=UTC
+PORT=3333
+HOST=localhost
+LOG_LEVEL=info
+APP_NAME=MonAppExemple
+APP_KEY=<app_key> # Généré par AdonisJS avec la commande `node ace generate:key`
+NODE_ENV=development
+SESSION_DRIVER=cookie
+DB_HOST=<db_host> # L'utilisation de 'localhost' est recommandée pour le développement à condition que le conteneur Docker de la base de données soit accessible
+DB_PORT=5432
+DB_USER=<db_user>
+DB_PASSWORD=<db_password>
+DB_DATABASE=<db_name>
+```
+
+4. **Lancer l’environnement de développement :**
 
 ```bash
-pnpm run dev                   # Démarre toutes les apps
-turbo run dev --filter=<nom-app>  # Démarre une app spécifique (ou cd apps/<nom-app> && pnpm dev)
+pnpm run dev                      # Démarre toutes les apps
+pnpm run dev --filter=<nom-app>  # Démarre une app spécifique (ou cd apps/<nom-app> && pnpm dev)
 ```
 
 ---
